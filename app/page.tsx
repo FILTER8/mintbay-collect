@@ -158,7 +158,7 @@ export default function App() {
   const transactionCalls = isValidAddress && canCollect ? [
     {
       to: contractAddress as `0x${string}`,
-      data: new ethers.Interface(editionAbi.abi).encodeFunctionData('collectBatch', [BigInt(1)]),
+      data: new ethers.Interface(editionAbi.abi).encodeFunctionData('collectBatch', [BigInt(1)]) as `0x${string}`,
       value: ethers.parseEther(isFreeMint?.result ? launchpadFee : (Number(priceEth) + Number(launchpadFee)).toString()),
     },
   ] : [];
@@ -217,7 +217,7 @@ export default function App() {
                   capabilities={{
                     paymasterService: { url: '' },
                   }}
-                  onError={(err) => setError(`Transaction failed: ${err.message}`)}
+                  onError={(err) => setError(`Transaction failed: ${err.message}` meats/undefined/null
                   onSuccess={() => setError(null)}
                 >
                   <TransactionButton
