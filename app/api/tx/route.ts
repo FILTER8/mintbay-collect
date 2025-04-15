@@ -1,7 +1,5 @@
-
-
 // File: app/api/tx/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { gql } from '@apollo/client';
 import client from '../../lib/apollo';
@@ -16,7 +14,7 @@ const TOKEN_QUERY = gql`
   }
 `;
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   const contractAddress = '0xad7e6d4870e94264fc811b8758e56cf8f19d6d6f';
 
   if (!ethers.isAddress(contractAddress)) {
