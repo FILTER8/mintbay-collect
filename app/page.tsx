@@ -1,7 +1,7 @@
 // File: app/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAccount, useReadContracts } from 'wagmi';
 import { useQuery } from '@apollo/client';
@@ -29,7 +29,7 @@ import {
 import { Button, Icon, Home, Features } from './components/DemoComponents';
 import editionAbi from './contracts/MintbayEdition.json';
 import client from './lib/apollo';
-import Image from 'next/image'; // Add this line
+import Image from 'next/image';
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
@@ -58,7 +58,7 @@ const TOKEN_QUERY = gql`
   }
 `;
 
-export default function App() {
+function AppContent() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
@@ -205,12 +205,15 @@ export default function App() {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-bold mb-4 text-center">{edition?.name || 'NFT'}</h2>
               <Image 
-  src={imageUrl} 
-  alt="NFT" 
-  width={288} 
-  height={288} 
-  className="object-cover mx-auto mb-4"
-/>
+                src={imageUrl} 
+                alt="NFT" 
+                width={288}
+                height={288}
+                className="object-cover mx-auto mb-4"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://mintbay-collect.vercel.app/placeholder-nft.png';
+                }}
+              />
               <div className="text-sm space-y-2 text-center">
                 <p><strong>Price:</strong> {totalCost} ETH</p>
                 <p><strong>Fee:</strong> {launchpadFee} ETH</p>
@@ -256,5 +259,13 @@ export default function App() {
         </footer>
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+      <AppContent />
+    </Suspense>
   );
 }
