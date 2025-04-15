@@ -1,9 +1,11 @@
-// File: app/api/tx/[id]/route.ts
+
+
+// File: app/api/tx/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { gql } from '@apollo/client';
-import client from '@/lib/apollo';
-import editionAbi from '@/contracts/MintbayEdition.json';
+import client from '../lib/apollo';
+import editionAbi from '../contracts/MintbayEdition.json';
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
@@ -14,16 +16,16 @@ const TOKEN_QUERY = gql`
   }
 `;
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function POST(req: NextRequest) {
+  const contractAddress = '0xad7e6d4870e94264fc811b8758e56cf8f19d6d6f';
 
-  if (!ethers.isAddress(id)) {
+  if (!ethers.isAddress(contractAddress)) {
     return new NextResponse('Invalid contract address', { status: 400 });
   }
 
   const queryResult = await client.query({
     query: TOKEN_QUERY,
-    variables: { id: id.toLowerCase() },
+    variables: { id: contractAddress.toLowerCase() },
   });
 
   const quantity = 1;
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       chainId: 'eip155:8453',
       method: 'eth_sendTransaction',
       params: {
-        to: id,
+        to: contractAddress,
         data: txData,
         value: totalCostWei.toString(),
       },

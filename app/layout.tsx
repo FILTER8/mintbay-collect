@@ -12,7 +12,6 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const URL = process.env.NEXT_PUBLIC_URL || 'https://mintbay-collect.vercel.app';
-  const contractAddress = '0xad7e6d4870e94264fc811b8758e56cf8f19d6d6f';
   return {
     title: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp',
     description: 'Mint NFTs on Base with Coinbase Wallet',
@@ -21,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'fc:frame:image': process.env.NEXT_PUBLIC_IMAGE_URL || 'https://mintbay-collect.vercel.app/placeholder-nft.png',
       'fc:frame:button:1': 'Collect',
       'fc:frame:button:1:action': 'tx',
-      'fc:frame:button:1:target': `${URL}/api/tx/${contractAddress}`,
+      'fc:frame:button:1:target': `${URL}/api/tx`,
       'og:image': process.env.NEXT_PUBLIC_IMAGE_URL,
     },
   };
