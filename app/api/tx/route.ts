@@ -36,7 +36,7 @@ export async function POST() {
   const iface = new ethers.Interface(editionAbi.abi);
   const txData = iface.encodeFunctionData('collectBatch', [BigInt(quantity)]);
 
-  const headers = {
+  const headers: { [key: string]: string } = {
     'Content-Type': 'application/json',
   };
 
