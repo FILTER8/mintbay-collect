@@ -202,7 +202,13 @@ export default function App() {
           {isValidAddress ? (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-bold mb-4 text-center">{edition?.name || 'NFT'}</h2>
-              <img src={imageUrl} alt="NFT" className="w-72 h-72 object-cover mx-auto mb-4" />
+              <Image 
+  src={imageUrl} 
+  alt="NFT" 
+  width={288} 
+  height={288} 
+  className="object-cover mx-auto mb-4"
+/>
               <div className="text-sm space-y-2 text-center">
                 <p><strong>Price:</strong> {totalCost} ETH</p>
                 <p><strong>Fee:</strong> {launchpadFee} ETH</p>
