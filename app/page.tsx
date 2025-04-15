@@ -1,5 +1,3 @@
-
-
 // File: app/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
@@ -66,7 +64,7 @@ export default function App() {
   const searchParams = useSearchParams();
   const contractAddress = searchParams.get('contract')?.toLowerCase();
   const { address: walletAddress } = useAccount();
-  const [imageUrl, setImageUrl] = useState('http://localhost:3000/placeholder-nft.png');
+  const [imageUrl, setImageUrl] = useState('https://mintbay-collect.vercel.app/placeholder-nft.png');
 
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();

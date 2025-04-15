@@ -21,20 +21,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return new NextResponse('Invalid contract address', { status: 400 });
   }
 
-  const { data } = await client.query({
+  const queryResult = await client.query({
     query: TOKEN_QUERY,
     variables: { id: id.toLowerCase() },
   });
 
   const quantity = 1;
-  const priceEth = data?.edition?.priceEth || '0.01';
-  const isFreeMint = data?.edition?.isFreeMint || false;
+  const priceEth = queryResult.data?.edition?.priceEth || '0';
+  const isFreeMint = queryResult.data?.edition?.isFreeMint || false;
   const launchpadFee = '0.0004';
   const totalCostEther = isFreeMint ? launchpadFee : (Number(priceEth) + Number(launchpadFee)).toString();
   const totalCostWei = ethers.parseEther(totalCostEther);
 
   const iface = new ethers.Interface(editionAbi.abi);
-  const data = iface.encodeFunctionData('collectBatch', [BigInt(quantity)]);
+  const txData = iface.encodeFunctionData('collectBatch', [BigInt(quantity)]);
 
   const headers = {
     'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       method: 'eth_sendTransaction',
       params: {
         to: id,
-        data,
+        data: txData,
         value: totalCostWei.toString(),
       },
     }),
