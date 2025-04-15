@@ -1,5 +1,6 @@
 // File: app/page.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAccount, useReadContracts } from 'wagmi';
@@ -28,6 +29,7 @@ import {
 import { Button, Icon, Home, Features } from './components/DemoComponents';
 import editionAbi from './contracts/MintbayEdition.json';
 import client from './lib/apollo';
+import Image from 'next/image'; // Add this line
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
