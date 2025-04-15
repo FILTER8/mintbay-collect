@@ -4,8 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { gql } from '@apollo/client';
-import client from '../lib/apollo';
-import editionAbi from '../contracts/MintbayEdition.json';
+import client from './lib/apollo';
+import editionAbi from './contracts/MintbayEdition.json';
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
