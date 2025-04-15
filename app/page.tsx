@@ -217,7 +217,7 @@ export default function App() {
                   capabilities={{
                     paymasterService: { url: '' },
                   }}
-                  onError={(err) => setError(`Transaction failed: ${err.message}` meats/undefined/null
+                  onError={(err) => setError(`Transaction failed: ${err.message}`)}
                   onSuccess={() => setError(null)}
                 >
                   <TransactionButton
