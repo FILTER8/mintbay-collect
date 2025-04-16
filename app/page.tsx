@@ -28,6 +28,22 @@ import { Button, Icon } from "./components/DemoComponents";
 import editionAbi from "./contracts/MintbayEdition.json";
 import { useRouter } from "next/navigation";
 
+interface WhitelistContract {
+  id: string;
+  whitelistedEdition: {
+    id: string;
+    address: string;
+    name: string;
+    priceEth: string;
+    isFreeMint: boolean;
+    editionSize: string;
+    totalSupply: string;
+    tokens?: Array<{
+      tokenURI?: string | null;
+    }>;
+  };
+}
+
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
     edition(id: $id) {
@@ -93,11 +109,11 @@ export default function App() {
   const priceEth = edition?.priceEth || "0";
   const isFreeMint = edition?.isFreeMint || false;
   const launchpadFee = "0.0004";
-  const whitelistContracts = useMemo(() => edition?.whitelistedContracts || [], [edition]);
+  const whitelistContracts = useMemo<WhitelistContract[]>(() => edition?.whitelistedContracts || [], [edition]);
 
   const contractConfig = { address: CONTRACT_ADDRESS as `0x${string}`, abi: editionAbi.abi };
   const whitelistContractConfigs = useMemo(() => {
-    return whitelistContracts.map((wc) => ({
+    return whitelistContracts.map((wc: WhitelistContract) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
       abi: editionAbi.abi,
     }));
@@ -125,9 +141,9 @@ export default function App() {
   const isMaxMintReached = maxMintAllowed === 0;
 
   const whitelistContractInfo = useMemo(() => {
-    return whitelistContracts.map((wc, index) => ({
+    return whitelistContracts.map((wc: WhitelistContract, index: number) => ({
       address: wc.whitelistedEdition.address,
-      name: wc.whitelistedEdition.name || wc.whitelistedEdition.address.slice(0, 6),
+      name: wc.whitelistedEdition.name,
       priceEth: wc.whitelistedEdition.priceEth || "0",
       isFreeMint: wc.whitelistedEdition.isFreeMint || false,
       totalSupply: whitelistTotalSupplyData[index]?.result
@@ -423,7 +439,7 @@ export default function App() {
                 </button>
               ) : isMaxMintReached ? (
                 <button
-                  className="w-full bg-gray-300 text-gray-700 py-2 px-4 text-sm rounded"
+                  className="w-full bg-gray-300 text-gray-700 py-2Āpx-4 text-sm rounded"
                   disabled
                 >
                   Max Mint Reached
