@@ -1,4 +1,4 @@
-```typescript
+
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -22,13 +22,13 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useWriteContract, useAccount, useReadContracts } from "wagmi";
-import { Abi } from "viem";
 import { ethers } from "ethers";
 import Image from "next/image";
 import client from "./lib/apollo";
 import { Button, Icon } from "./components/DemoComponents";
 import editionAbi from "./contracts/MintbayEdition.json";
 import { useRouter } from "next/navigation";
+import { useDebounce } from "use-debounce";
 
 interface WhitelistContract {
   id: string;
@@ -46,7 +46,7 @@ interface WhitelistContract {
       tokenURI: string | null;
     }>;
   };
-}
+};
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
@@ -90,6 +90,9 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasWhitelistToken, setHasWhitelistToken] = useState<boolean | null>(null);
   const [showWhitelistPopup, setShowWhitelistPopup] = useState(false);
+  const [mintQuantity, setMintQuantity] = useState("1");
+  const [debouncedMintQuantity] = useDebounce(mintQuantity, 300);
+  const [maxBatchMint, setMaxBatchMint] = useState(20);
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();
   const { address: walletAddress, isConnected } = useAccount();
@@ -119,13 +122,13 @@ export default function App() {
 
   const contractConfig = {
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: editionAbi.abi as Abi,
+    abi: editionAbi.abi,
   };
 
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
-      abi: editionAbi.abi as Abi,
+      abi: editionAbi.abi,
     }));
   }, [whitelistContracts]);
 
@@ -146,6 +149,19 @@ export default function App() {
   });
 
   const [maxMintPerAddressData, mintCountData, ...whitelistTotalSupplyData] = contractData || [];
+
+  useEffect(() => {
+    const fetchMaxBatchMint = async () => {
+      try {
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, editionAbi.abi, provider);
+        const maxBatch = Number(await contract.MAX_BATCH_MINT());
+        setMaxBatchMint(maxBatch);
+      } catch (error) {
+        console.error("Error fetching MAX_BATCH_MINT:", error);
+      }
+    };
+    fetchMaxBatchMint();
+  }, [provider]);
 
   const maxMintPerAddress = maxMintPerAddressData?.result;
   const mintCount = mintCountData?.result;
@@ -239,9 +255,10 @@ export default function App() {
   }, [isConnected, whitelistContracts, hasWhitelistToken, isMaxMintReached, isSoldOut]);
 
   const totalCost = useMemo(() => {
+    const quantity = Number(debouncedMintQuantity || 1);
     const baseCost = isFreeMint ? 0 : Number(priceEth);
-    return baseCost.toFixed(4).replace(/\.?0+$/, "");
-  }, [isFreeMint, priceEth]);
+    return (baseCost * quantity).toFixed(4).replace(/\.?0+$/, "");
+  }, [isFreeMint, priceEth, debouncedMintQuantity]);
 
   const editionCountDisplay = useMemo(() => {
     return `${minted}/${editionSize === Infinity ? "∞" : editionSize}`;
@@ -250,6 +267,12 @@ export default function App() {
   const handleCollect = useCallback(async () => {
     if (!isConnected) {
       setErrorMessage("Please connect your wallet!");
+      return;
+    }
+
+    const quantity = Number(debouncedMintQuantity);
+    if (quantity <= 0 || isNaN(quantity)) {
+      setErrorMessage("Please enter a valid quantity!");
       return;
     }
 
@@ -262,31 +285,36 @@ export default function App() {
         return;
       }
 
-      if (remainingTokens < 1 && remainingTokens !== Infinity) {
-        setErrorMessage("No tokens remain!");
+      if (quantity > maxBatchMint) {
+        setErrorMessage(`Batch size limited to ${maxBatchMint} NFTs per transaction.`);
+        return;
+      }
+
+      if (quantity > remainingTokens && remainingTokens !== Infinity) {
+        setErrorMessage(`Only ${remainingTokens} tokens remain!`);
         return;
       }
 
       const currentMintCount = await contract.mintCount(walletAddress);
       const maxPerAddress = await contract.maxMintPerAddress();
       const allowed = maxPerAddress ? Number(maxPerAddress) - Number(currentMintCount) : Infinity;
-      if (allowed < 1) {
-        setErrorMessage("You have reached the maximum mint limit for this wallet.");
+      if (quantity > allowed) {
+        setErrorMessage(`You can only mint up to ${allowed} more tokens!`);
         return;
       }
 
       const baseCostEther = isFreeMint ? "0" : priceEth;
-      const feeCostEther = launchpadFee;
+      const feeCostEther = (Number(launchpadFee) * quantity).toFixed(4);
       const baseCostWei = ethers.parseEther(baseCostEther);
       const feeCostWei = ethers.parseEther(feeCostEther);
-      const totalValueWei = (BigInt(baseCostWei) + BigInt(feeCostWei)).toString();
+      const totalValueWei = (BigInt(baseCostWei) * BigInt(quantity) + BigInt(feeCostWei)).toString();
 
       writeContract(
         {
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi: editionAbi.abi,
           functionName: "collectBatch",
-          args: [BigInt(1)],
+          args: [BigInt(quantity)],
           value: BigInt(totalValueWei),
         },
         {
@@ -296,6 +324,8 @@ export default function App() {
               message = "You need a token from a whitelisted contract to mint!";
             } else if (error.message.includes("InsufficientPayment")) {
               message = "Insufficient ETH sent for minting!";
+            } else if (error.message.includes("Exceeds max batch size")) {
+              message = `Cannot mint more than ${maxBatchMint} NFTs at once.`;
             }
             setErrorMessage(message);
             console.error("Collect Error:", error);
@@ -310,7 +340,7 @@ export default function App() {
       setErrorMessage("Failed to validate mint conditions. Please try again.");
       console.error("Collect Validation Error:", error);
     }
-  }, [isConnected, priceEth, isFreeMint, provider, writeContract, walletAddress, remainingTokens]);
+  }, [isConnected, priceEth, isFreeMint, provider, writeContract, walletAddress, remainingTokens, debouncedMintQuantity, maxBatchMint]);
 
   const handleCollectWhitelistToken = useCallback(
     async (contractAddress: string, priceEth: string, isFreeMint: boolean) => {
@@ -332,6 +362,12 @@ export default function App() {
         const editionSize = Number(await contract.editionSize());
         if (totalSupply >= editionSize) {
           setErrorMessage("This whitelist contract is sold out!");
+          return;
+        }
+
+        const maxBatchMint = Number(await contract.MAX_BATCH_MINT());
+        if (1 > maxBatchMint) {
+          setErrorMessage(`Batch size limited to ${maxBatchMint} NFTs per transaction.`);
           return;
         }
 
@@ -473,28 +509,43 @@ export default function App() {
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={handleCollect}
-                      className={`w-full py-2 px-4 text-sm text-white rounded ${
-                        isFreeMint
-                          ? "bg-green-500 hover:bg-green-600"
-                          : "bg-blue-500 hover:bg-blue-600"
-                      } ${!canCollect ? "bg-gray-400 cursor-not-allowed" : ""}`}
-                      disabled={!canCollect}
-                    >
-                      {isFreeMint
-                        ? `Free (${totalCost} ETH)`
-                        : `Collect (${totalCost} ETH)`}
-                    </button>
+                    <div className="flex items-center justify-center space-x-1 w-full">
+                      <input
+                        type="number"
+                        min="1"
+                        max={Math.min(maxMintAllowed, remainingTokens, maxBatchMint)}
+                        value={mintQuantity}
+                        onChange={(e) => {
+                          const val = Math.max(1, Number(e.target.value));
+                          const max = Math.min(maxMintAllowed, remainingTokens, maxBatchMint);
+                          setMintQuantity(Math.min(val, max).toString());
+                        }}
+                        className="w-12 border border-gray-300 p-1 text-center text-sm rounded"
+                      />
+                      <button
+                        onClick={handleCollect}
+                        className={`flex-1 py-2 px-4 text-sm text-white rounded ${
+                          isFreeMint
+                            ? "bg-green-500 hover:bg-green-600"
+                            : "bg-blue-500 hover:bg-blue-600"
+                        } ${!canCollect ? "bg-gray-400 cursor-not-allowed" : ""}`}
+                        disabled={!canCollect}
+                      >
+                        {isFreeMint
+                          ? `Free (${totalCost} ETH)`
+                          : `Collect (${totalCost} ETH)`}
+                      </button>
+                    </div>
                   )}
                   <div className="text-xs text-gray-500 flex items-center space-x-1">
-                    <span>+ {launchpadFee} ETH fee</span>
+                    <span>+ {launchpadFee} ETH fee per token</span>
                     <span className="relative group">
                       ⓘ
                       <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded w-48">
                         Mintbay charges a small fee for each token minted to run our service.
                       </span>
                     </span>
+ Staten Island, NY 10314
                   </div>
                 </div>
               )}
@@ -618,4 +669,3 @@ export default function App() {
     </div>
   );
 }
-```
