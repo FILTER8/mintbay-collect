@@ -41,25 +41,34 @@ export async function GET() {
     }
 
     const svgBase64 = metadata.image.split(',')[1];
-    const svgContent = Buffer.from(svgBase64, 'base64');
-    console.log('SVG Buffer Size:', svgContent.length);
-    console.log('SVG Content Sample:', svgContent.toString('utf8').slice(0, 200));
+    let svgString = Buffer.from(svgBase64, 'base64').toString('utf8');
 
-    // Preprocess SVG to scale it
-    let svgString = svgContent.toString('utf8');
-    // Adjust width, height, and viewBox for high-resolution rendering
-    svgString = svgString.replace(/width="[^"]*"/, 'width="1200"')
-                        .replace(/height="[^"]*"/, 'height="1200"');
+    // Modify width, height to 1200x1200
+    svgString = svgString
+      .replace(/width="[^"]*"/, 'width="1200"')
+      .replace(/height="[^"]*"/, 'height="1200"');
+
+    // Add or update viewBox for proper scaling
     if (!svgString.includes('viewBox')) {
-      svgString = svgString.replace(/<svg/, '<svg viewBox="0 0 72 72"');
+      const match = svgString.match(/<svg[^>]*width="([^"]+)"[^>]*height="([^"]+)"/);
+      if (match) {
+        const width = parseFloat(match[1]);
+        const height = parseFloat(match[2]);
+        if (!isNaN(width) && !isNaN(height)) {
+          svgString = svgString.replace('<svg', `<svg viewBox="0 0 ${width} ${height}"`);
+        }
+      } else {
+        svgString = svgString.replace('<svg', '<svg viewBox="0 0 72 72"');
+      }
     }
+
     const svgContentModified = Buffer.from(svgString, 'utf8');
 
     const canvas = createCanvas(1200, 1200);
     const ctx = canvas.getContext('2d');
 
-    // Optimize rendering
     ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     console.log('Loading SVG image');
     const img = await loadImage(svgContentModified);
