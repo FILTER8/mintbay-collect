@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery, gql } from "@apollo/client";
 import {
   useMiniKit,
   useAddFrame,
@@ -20,16 +21,32 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { Button, Icon } from "./components/DemoComponents";
+import client from "./lib/apollo";
 import Image from "next/image";
+
+const TOKEN_QUERY = gql`
+  query TokenPageQuery($id: ID!) {
+    edition(id: $id) {
+      tokens(where: { tokenId: 1 }, first: 1) {
+        tokenURI
+      }
+    }
+  }
+`;
+
+const CONTRACT_ADDRESS = "0x7f19732c1ad9c25e604e3649638c1486f53e5c35";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
   const [imageUrl, setImageUrl] = useState("https://mintbay-collect.vercel.app/placeholder-nft.png");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();
+
+  const { data, loading, error } = useQuery(TOKEN_QUERY, {
+    variables: { id: CONTRACT_ADDRESS.toLowerCase() },
+    client,
+  });
 
   useEffect(() => {
     if (!isFrameReady) {
@@ -43,46 +60,20 @@ export default function App() {
   }, [setFrameReady, isFrameReady]);
 
   useEffect(() => {
-    async function fetchAndConvertImage() {
-      try {
-        const response = await fetch('/api/generate-png');
-        const result = await response.json();
-        if (result.error) {
-          throw new Error(result.error);
+    if (data?.edition?.tokens?.[0]?.tokenURI) {
+      const tokenURI = data.edition.tokens[0].tokenURI;
+      if (tokenURI.startsWith("data:application/json;base64,")) {
+        try {
+          const metadata = JSON.parse(atob(tokenURI.split(",")[1]));
+          if (metadata.image) {
+            setImageUrl(metadata.image);
+          }
+        } catch (err) {
+          console.error("Failed to parse tokenURI:", err);
         }
-
-        const svgDataUri = result.svgDataUri;
-        if (!svgDataUri) {
-          throw new Error('No SVG data returned');
-        }
-
-        // Convert SVG to PNG client-side
-        const img: HTMLImageElement = new window.Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 600;
-          canvas.height = 600;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, 0, 0, 600, 600);
-
-          const pngUrl = canvas.toDataURL('image/png');
-          setImageUrl(pngUrl);
-          setLoading(false);
-          console.log('PNG generated:', pngUrl);
-        };
-        img.onerror = () => {
-          throw new Error('Failed to load SVG');
-        };
-        img.src = svgDataUri;
-      } catch (err) {
-        console.error('Failed to generate PNG:', err);
-        setError('Failed to load token image');
-        setLoading(false);
       }
     }
-
-    fetchAndConvertImage();
-  }, []);
+  }, [data]);
 
   const handleAddFrame = async () => {
     try {
@@ -137,7 +128,7 @@ export default function App() {
           {loading ? (
             <div className="text-center p-4">Loading...</div>
           ) : error ? (
-            <div className="text-center p-4 text-red-500">Error: {error}</div>
+            <div className="text-center p-4 text-red-500">Error: {error.message}</div>
           ) : (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <Image
