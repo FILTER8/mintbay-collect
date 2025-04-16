@@ -47,7 +47,6 @@ const useNFTURI = (address: string, tokenId: number, skip: boolean) => {
     args: [tokenId],
     query: {
       enabled: !shouldSkip,
-      cacheTime: 600_000, // Cache contract calls for 10 minutes
     },
   });
 
@@ -125,7 +124,7 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
 
   return (
     <Image
-      src={process.env.NEXT_PUBLIC_SPLASH_IMAGE_URL || '/default-nft.png'}
+      src={process.env.NEXT_PUBLIC_SPLASH_IMAGE_URL || '/loading.png'}
       alt="Default NFT"
       width={size}
       height={size}
