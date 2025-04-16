@@ -21,7 +21,7 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { Button, Icon } from "./components/DemoComponents";
-import { useReadContract, useContractReads } from "wagmi";
+import { useReadContract, useContractReads, Abi } from "wagmi";
 import TokenCard from "./components/TokenCard";
 import factoryAbi from "./contracts/MintbayEditionFactory.json";
 import editionAbi from "./contracts/MintbayEdition.json";
@@ -89,7 +89,7 @@ export default function App() {
   // Fetch all editions from the factory contract
   const { data: allEditionsFromContract } = useReadContract({
     address: FACTORY_ADDRESS as `0x${string}`,
-    abi: factoryAbi.abi,
+    abi: factoryAbi.abi as Abi,
     functionName: "getAllEditions",
     chainId: 8453, // Base Mainnet
   });
@@ -104,7 +104,7 @@ export default function App() {
     () =>
       normalizedEditions.map((address) => ({
         address: address as `0x${string}`,
-        abi: editionAbi.abi,
+        abi: editionAbi.abi as Abi,
         chainId: 8453, // Base Mainnet
       })),
     [normalizedEditions]
