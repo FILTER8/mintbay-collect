@@ -63,8 +63,9 @@ export async function GET() {
         'Access-Control-Allow-Origin': '*',
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Error generating PNG:', err);
-    return NextResponse.json({ error: 'Failed to generate PNG', details: err.message }, { status: 500 });
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: 'Failed to generate PNG', details: errorMessage }, { status: 500 });
   }
 }
