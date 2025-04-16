@@ -47,8 +47,8 @@ const useNFTURI = (address: string, tokenId: number, skip: boolean) => {
     args: [tokenId],
     query: {
       enabled: !shouldSkip,
+      cacheTime: 600_000, // Cache contract calls for 10 minutes
     },
-    cacheTime: 600_000, // Cache contract calls for 10 minutes
   });
 
   return useMemo(() => {
@@ -61,10 +61,10 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(imageSrc ? 'success' : 'loading');
   const [fetchedImageSrc, setFetchedImageSrc] = useState<string | null>(imageSrc || null);
   const size = 72 * scale;
+  const cacheKey = `${address}:${tokenId}:image`;
 
   // Check cache for image
   useEffect(() => {
-    const cacheKey = `${address}:${tokenId}:image`;
     if (!imageSrc) {
       localforage.getItem<string | null>(cacheKey).then((cached) => {
         if (cached) {
@@ -73,7 +73,7 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
         }
       });
     }
-  }, [address, tokenId, imageSrc]);
+  }, [address, tokenId, imageSrc, cacheKey]);
 
   // Fetch tokenURI from contract only if needed
   const contractURI = useNFTURI(address, tokenId, !!imageSrc || !!tokenURI);
@@ -97,7 +97,7 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
     };
 
     loadImage();
-  }, [primaryURI, imageSrc, address, tokenId]);
+  }, [primaryURI, imageSrc, address, tokenId, cacheKey]);
 
   if (status === 'loading') {
     return <Placeholder size={size} text="Loading..." />;
