@@ -1,8 +1,7 @@
-// File: app/page.tsx
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAccount, useReadContracts } from 'wagmi';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
@@ -60,9 +59,11 @@ const TOKEN_QUERY = gql`
 
 function AppContent() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
+  const router = useRouter();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // New state for success message
   const searchParams = useSearchParams();
   const contractAddress = searchParams.get('contract')?.toLowerCase();
   const { address: walletAddress } = useAccount();
@@ -221,6 +222,9 @@ function AppContent() {
                 <p><strong>Whitelist:</strong> {isWhitelisted ? 'Eligible' : 'Not whitelisted'}</p>
               </div>
               {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
+              {successMessage && (
+                <p className="text-green-500 text-sm text-center mt-2">{successMessage}</p>
+              )}
               <div className="mt-4 flex flex-col items-center gap-4">
                 <Transaction
                   chainId={8453}
@@ -228,8 +232,16 @@ function AppContent() {
                   capabilities={{
                     paymasterService: { url: '' },
                   }}
-                  onError={(err) => setError(`Transaction failed: ${err.message}`)}
-                  onSuccess={() => setError(null)}
+                  onError={(err) => {
+                    setError(`Transaction failed: ${err.message}`);
+                    setSuccessMessage(null); // Clear success message on error
+                  }}
+                  onSuccess={() => {
+                    setError(null);
+                    setSuccessMessage('NFT collected successfully!');
+                    // Navigate to MiniApp after successful transaction
+                    router.push(`/?contract=${contractAddress}`);
+                  }}
                 >
                   <TransactionButton
                     disabled={!canCollect || !walletAddress}
