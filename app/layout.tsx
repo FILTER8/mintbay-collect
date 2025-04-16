@@ -45,8 +45,8 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame": JSON.stringify({
         version: process.env.NEXT_PUBLIC_VERSION || 'next',
         imageUrl: IMAGE_URL,
-        imageAspectRatio: '1:1',
-        imageWidth: 1200, // Explicit dimensions
+        imageAspectRatio: '1.5:1', // 3:2 ratio
+        imageWidth: 1800,
         imageHeight: 1200,
         button: {
           title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp'}`,
@@ -60,8 +60,12 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       }),
       "og:image": IMAGE_URL,
-      "og:image:width": "1200",
+      "og:image:width": "1800",
       "og:image:height": "1200",
+      "twitter:card": "summary_large_image",
+      "twitter:image": IMAGE_URL,
+      "twitter:image:width": "1800",
+      "twitter:image:height": "1200",
     },
   };
 }

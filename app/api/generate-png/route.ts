@@ -42,35 +42,32 @@ export async function GET() {
 
     const svgBase64 = metadata.image.split(',')[1];
     let svgString = Buffer.from(svgBase64, 'base64').toString('utf8');
+    console.log('SVG Content:', svgString);
 
-    // Modify width, height to 1200x1200
+    // Optimize SVG for high-resolution rendering
     svgString = svgString
       .replace(/width="[^"]*"/, 'width="1200"')
-      .replace(/height="[^"]*"/, 'height="1200"');
-
-    // Add or update viewBox for proper scaling
+      .replace(/height="[^"]*"/, 'height="1200"')
+      .replace(/viewBox="[^"]*"/, 'viewBox="0 0 72 72"');
     if (!svgString.includes('viewBox')) {
-      const match = svgString.match(/<svg[^>]*width="([^"]+)"[^>]*height="([^"]+)"/);
-      if (match) {
-        const width = parseFloat(match[1]);
-        const height = parseFloat(match[2]);
-        if (!isNaN(width) && !isNaN(height)) {
-          svgString = svgString.replace('<svg', `<svg viewBox="0 0 ${width} ${height}"`);
-        }
-      } else {
-        svgString = svgString.replace('<svg', '<svg viewBox="0 0 72 72"');
-      }
+      svgString = svgString.replace('<svg', '<svg viewBox="0 0 72 72"');
     }
-
     const svgContentModified = Buffer.from(svgString, 'utf8');
 
-    const canvas = createCanvas(1200, 1200);
+    // Create 3:2 canvas (1800x1200)
+    const canvas = createCanvas(1800, 1200);
     const ctx = canvas.getContext('2d');
+
+    // Add white background for padding
+    ctx.fillStyle = '#FFFFFF'; // Match splashBackgroundColor
+    ctx.fillRect(0, 0, 1800, 1200);
+
 
 
     console.log('Loading SVG image');
     const img = await loadImage(svgContentModified);
-    ctx.drawImage(img, 0, 0, 1200, 1200);
+    // Center token image: 1200x1200 at x=300 (left padding), y=0
+    ctx.drawImage(img, 300, 0, 1200, 1200);
 
     const buffer = canvas.toBuffer('image/png', { compressionLevel: 0 });
     console.log('PNG Buffer Size:', buffer.length);
