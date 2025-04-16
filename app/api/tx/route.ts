@@ -15,7 +15,7 @@ const TOKEN_QUERY = gql`
 `;
 
 export async function POST() {
-  const contractAddress = '0xad7e6d4870e94264fc811b8758e56cf8f19d6d6f';
+  const contractAddress = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
 
   if (!ethers.isAddress(contractAddress)) {
     return new NextResponse('Invalid contract address', { status: 400 });
