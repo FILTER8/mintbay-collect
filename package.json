@@ -16,6 +16,7 @@
     "@vercel/blob": "^1.0.0",
     "canvas": "^3.1.0",
     "ethers": "^6.13.5",
+    "localforage": "^1.10.0",
     "next": "^14.2.15",
     "react": "^18",
     "react-dom": "^18",
