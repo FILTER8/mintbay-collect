@@ -67,7 +67,7 @@ export async function GET() {
     const canvas = createCanvas(1200, 1200);
     const ctx = canvas.getContext('2d');
 
-    ctx.imageSmoothingEnabled = true;
+
     ctx.imageSmoothingQuality = 'high';
 
     console.log('Loading SVG image');
