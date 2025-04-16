@@ -57,7 +57,7 @@ export default function App() {
         }
 
         // Convert SVG to PNG client-side
-        const img = new Image();
+        const img: HTMLImageElement = new window.Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
           canvas.width = 600;

@@ -15,9 +15,6 @@ const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
     edition(id: $id) {
       name
-      tokens(where: { tokenId: 1 }, first: 1) {
-        tokenURI
-      }
     }
   }
 `;
@@ -26,8 +23,8 @@ const CONTRACT_ADDRESS = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
 
 export async function generateMetadata(): Promise<Metadata> {
   const URL = process.env.NEXT_PUBLIC_URL || 'https://mintbay-collect.vercel.app';
-  const DEFAULT_IMAGE_URL = process.env.NEXT_PUBLIC_IMAGE_URL || 'https://mintbay-collect.vercel.app/placeholder-nft.png';
-  let imageUrl = DEFAULT_IMAGE_URL;
+  const IMAGE_URL = `${URL}/api/generate-png`; // PNG from API route
+  const FALLBACK_IMAGE_URL = process.env.NEXT_PUBLIC_IMAGE_URL || 'https://mintbay-collect.vercel.app/placeholder-nft.png';
   let title = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp';
 
   try {
@@ -35,14 +32,6 @@ export async function generateMetadata(): Promise<Metadata> {
       query: TOKEN_QUERY,
       variables: { id: CONTRACT_ADDRESS.toLowerCase() },
     });
-    const tokenURI = data?.edition?.tokens?.[0]?.tokenURI;
-    if (tokenURI?.startsWith('data:application/json;base64,')) {
-      const metadata = JSON.parse(atob(tokenURI.split(',')[1]));
-      if (metadata.image && metadata.image.startsWith('data:image/svg+xml;base64,')) {
-        // Use the API route to get the PNG URL (placeholder for client-side generation)
-        imageUrl = `${URL}/api/generate-png`;
-      }
-    }
     if (data?.edition?.name) {
       title = data.edition.name;
     }
@@ -56,19 +45,19 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
       "fc:frame": JSON.stringify({
         version: process.env.NEXT_PUBLIC_VERSION || 'next',
-        imageUrl: imageUrl,
+        imageUrl: IMAGE_URL,
         button: {
           title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp'}`,
           action: {
             type: "launch_frame",
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp',
             url: URL,
-            splashImageUrl: process.env.NEXT_PUBLIC_SPLASH_IMAGE_URL || imageUrl,
+            splashImageUrl: process.env.NEXT_PUBLIC_SPLASH_IMAGE_URL || IMAGE_URL,
             splashBackgroundColor: `#${process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || 'FFFFFF'}`,
           },
         },
       }),
-      "og:image": imageUrl,
+      "og:image": IMAGE_URL,
     },
   };
 }
