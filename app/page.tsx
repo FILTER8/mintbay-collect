@@ -118,7 +118,6 @@ const { data: contractData } = useContractReads({
     { ...contract, functionName: "price" },
     { ...contract, functionName: "isFreeMint" },
   ]),
-  refetchInterval: 30000, // Poll every 30 seconds
 });
 
   const supplyMap = useMemo(() => {
