@@ -72,9 +72,15 @@ export default function App() {
   const { writeContract, error: writeError } = useWriteContract();
   const router = useRouter();
 
+  // Log context for debugging
+  useEffect(() => {
+    console.log("MiniKit context:", context);
+  }, [context]);
+
   // Extract token address from shared URL
   const tokenAddress = useMemo(() => {
-    const sharedUrl = context?.message?.untrustedData?.url;
+    // Use context.input?.url instead of context.message
+    const sharedUrl = (context as any)?.input?.url;
     if (sharedUrl) {
       try {
         const url = new URL(sharedUrl);
@@ -89,7 +95,7 @@ export default function App() {
     }
     // Fallback address for local testing
     return "0x7f19732c1ad9c25e604e3649638c1486f53e5c35";
-  }, [context?.message?.untrustedData?.url]);
+  }, [context]);
 
   const { data, loading, error } = useQuery(TOKEN_QUERY, {
     variables: { id: tokenAddress },
@@ -371,7 +377,7 @@ export default function App() {
     }
   };
 
-  const saveFrameButton = context && !context.client.added ? (
+  const saveFrameButton = context && !(context as any).client?.added ? (
     <Button
       variant="ghost"
       size="sm"
