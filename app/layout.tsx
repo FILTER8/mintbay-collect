@@ -46,6 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
         version: process.env.NEXT_PUBLIC_VERSION || 'next',
         imageUrl: IMAGE_URL,
         imageAspectRatio: '1:1',
+        imageWidth: 1200, // Explicit dimensions
+        imageHeight: 1200,
         button: {
           title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp'}`,
           action: {

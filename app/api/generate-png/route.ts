@@ -45,18 +45,27 @@ export async function GET() {
     console.log('SVG Buffer Size:', svgContent.length);
     console.log('SVG Content Sample:', svgContent.toString('utf8').slice(0, 200));
 
+    // Preprocess SVG to scale it
+    let svgString = svgContent.toString('utf8');
+    // Adjust width, height, and viewBox for high-resolution rendering
+    svgString = svgString.replace(/width="[^"]*"/, 'width="1200"')
+                        .replace(/height="[^"]*"/, 'height="1200"');
+    if (!svgString.includes('viewBox')) {
+      svgString = svgString.replace(/<svg/, '<svg viewBox="0 0 72 72"');
+    }
+    const svgContentModified = Buffer.from(svgString, 'utf8');
+
     const canvas = createCanvas(1200, 1200);
     const ctx = canvas.getContext('2d');
 
-    // Optimize SVG rendering
+    // Optimize rendering
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
 
     console.log('Loading SVG image');
-    const img = await loadImage(svgContent);
+    const img = await loadImage(svgContentModified);
     ctx.drawImage(img, 0, 0, 1200, 1200);
 
-    const buffer = canvas.toBuffer('image/png', { compressionLevel: 0 }); // No compression
+    const buffer = canvas.toBuffer('image/png', { compressionLevel: 0 });
     console.log('PNG Buffer Size:', buffer.length);
 
     return new NextResponse(buffer, {
