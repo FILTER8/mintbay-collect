@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'fc:frame:button:1:action': 'tx',
       'fc:frame:button:1:target': `${URL}/api/tx`,
       'fc:frame:button:2': 'Open App',
-      'fc:frame:button:2:action': 'post',
+      'fc:frame:button:2:action': 'link', // Changed from 'post' to 'link'
       'fc:frame:button:2:target': `${URL}?contract=0x7f19732c1ad9c25e604e3649638c1486f53e5c35`,
       'og:image': IMAGE_URL,
     },
