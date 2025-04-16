@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -21,6 +22,7 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useWriteContract, useAccount, useReadContracts } from "wagmi";
+import { Abi } from "viem"; // Import Abi type from viem (used by wagmi)
 import { ethers } from "ethers";
 import Image from "next/image";
 import client from "./lib/apollo";
@@ -111,11 +113,12 @@ export default function App() {
   const launchpadFee = "0.0004";
   const whitelistContracts = useMemo<WhitelistContract[]>(() => edition?.whitelistedContracts || [], [edition]);
 
-  const contractConfig = { address: CONTRACT_ADDRESS as `0x${string}`, abi: editionAbi.abi };
+  // Cast editionAbi.abi to Abi to satisfy wagmi's type requirements
+  const contractConfig = { address: CONTRACT_ADDRESS as `0x${string}`, abi: editionAbi.abi as Abi };
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
-      abi: editionAbi.abi,
+      abi: editionAbi.abi as Abi,
     }));
   }, [whitelistContracts]);
 
@@ -439,7 +442,7 @@ export default function App() {
                 </button>
               ) : isMaxMintReached ? (
                 <button
-                  className="w-full bg-gray-300 text-gray-700 py-2Āpx-4 text-sm rounded"
+                  className="w-full bg-gray-300 text-gray-700 py-2 px-4 text-sm rounded"
                   disabled
                 >
                   Max Mint Reached
