@@ -21,7 +21,8 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { Button, Icon } from "./components/DemoComponents";
-import { useReadContract, useContractReads, Abi } from "wagmi";
+import { useReadContract, useContractReads } from "wagmi";
+import { Abi } from "viem"; // Fixed import
 import TokenCard from "./components/TokenCard";
 import factoryAbi from "./contracts/MintbayEditionFactory.json";
 import editionAbi from "./contracts/MintbayEdition.json";
