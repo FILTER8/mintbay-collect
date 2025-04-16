@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAccount, useReadContracts } from 'wagmi';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
@@ -59,18 +59,17 @@ const TOKEN_QUERY = gql`
 
 function AppContent() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
-  const router = useRouter();
+  const openUrl = useOpenUrl();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null); // New state for success message
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const contractAddress = searchParams.get('contract')?.toLowerCase();
   const { address: walletAddress } = useAccount();
   const [imageUrl, setImageUrl] = useState('https://mintbay-collect.vercel.app/placeholder-nft.png');
 
   const addFrame = useAddFrame();
-  const openUrl = useOpenUrl();
 
   const isValidAddress = contractAddress && ethers.isAddress(contractAddress);
 
@@ -102,7 +101,12 @@ function AppContent() {
 
   useEffect(() => {
     if (!isFrameReady) {
-      setFrameReady();
+      try {
+        setFrameReady();
+        console.log('MiniKit frame set to ready');
+      } catch (err) {
+        console.error('MiniKit setFrameReady error:', err);
+      }
     }
   }, [setFrameReady, isFrameReady]);
 
@@ -123,8 +127,12 @@ function AppContent() {
   }, [edition]);
 
   const handleAddFrame = async () => {
-    const frameAdded = await addFrame();
-    setFrameAdded(Boolean(frameAdded));
+    try {
+      const frameAdded = await addFrame();
+      setFrameAdded(Boolean(frameAdded));
+    } catch (err) {
+      console.error('Add frame error:', err);
+    }
   };
 
   const saveFrameButton = context && !context.client.added ? (
@@ -171,6 +179,7 @@ function AppContent() {
   }
 
   if (isValidAddress && graphError) {
+    console.error('GraphQL error:', graphError);
     return <div className="text-center p-4 mini-app-theme">Error: {graphError.message}</div>;
   }
 
@@ -234,13 +243,13 @@ function AppContent() {
                   }}
                   onError={(err) => {
                     setError(`Transaction failed: ${err.message}`);
-                    setSuccessMessage(null); // Clear success message on error
+                    setSuccessMessage(null);
+                    console.error('Transaction error:', err);
                   }}
                   onSuccess={() => {
                     setError(null);
                     setSuccessMessage('NFT collected successfully!');
-                    // Navigate to MiniApp after successful transaction
-                    router.push(`/?contract=${contractAddress}`);
+                    console.log('Transaction successful');
                   }}
                 >
                   <TransactionButton
