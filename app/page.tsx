@@ -111,15 +111,15 @@ export default function App() {
     [normalizedEditions]
   );
 
-  const { data: contractData } = useContractReads({
-    contracts: editionContracts.flatMap((contract) => [
-      { ...contract, functionName: "totalSupply" },
-      { ...contract, functionName: "nextTokenId" },
-      { ...contract, functionName: "price" },
-      { ...contract, functionName: "isFreeMint" },
-    ]),
-    watch: true,
-  });
+const { data: contractData } = useContractReads({
+  contracts: editionContracts.flatMap((contract) => [
+    { ...contract, functionName: "totalSupply" },
+    { ...contract, functionName: "nextTokenId" },
+    { ...contract, functionName: "price" },
+    { ...contract, functionName: "isFreeMint" },
+  ]),
+  refetchInterval: 30000, // Poll every 30 seconds
+});
 
   const supplyMap = useMemo(() => {
     const map = new Map<string, { totalSupply: number; nextTokenId: number; price: string; isFreeMint: boolean }>();
