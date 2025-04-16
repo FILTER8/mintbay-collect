@@ -22,6 +22,7 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useWriteContract, useAccount, useReadContracts } from "wagmi";
+import { Abi } from "viem";
 import { ethers } from "ethers";
 import Image from "next/image";
 import client from "./lib/apollo";
@@ -122,13 +123,13 @@ export default function App() {
 
   const contractConfig = {
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: editionAbi.abi,
+    abi: editionAbi.abi as Abi,
   };
 
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
-      abi: editionAbi.abi,
+      abi: editionAbi.abi as Abi,
     }));
   }, [whitelistContracts]);
 
@@ -229,7 +230,7 @@ export default function App() {
       const tokenURI = data.edition.tokens[0].tokenURI;
       if (tokenURI.startsWith("data:application/json;base64,")) {
         try {
-          const metadata = JSON.parse(atob(tokenURI.split(",")[1]));
+          const metadata = JSON.parse(atob(edition.tokenURI.split(",")[1]));
           if (metadata.image) {
             setImageUrl(metadata.image);
           }
@@ -545,7 +546,6 @@ export default function App() {
                         Mintbay charges a small fee for each token minted to run our service.
                       </span>
                     </span>
- Staten Island, NY 10314
                   </div>
                 </div>
               )}
