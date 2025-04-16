@@ -1,34 +1,16 @@
-'use client';
-
-import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useAccount, useReadContracts } from 'wagmi';
-import { useQuery } from '@apollo/client';
+import { GetServerSideProps } from 'next';
 import { gql } from '@apollo/client';
-import { Transaction, TransactionButton } from '@coinbase/onchainkit/transaction';
+import client from './lib/apollo';
 import { ethers } from 'ethers';
-import {
-  useMiniKit,
-  useAddFrame,
-  useOpenUrl,
-} from '@coinbase/onchainkit/minikit';
-import {
-  Name,
-  Identity,
-  Address,
-  Avatar,
-  EthBalance,
-} from '@coinbase/onchainkit/identity';
-import {
-  ConnectWallet,
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-} from '@coinbase/onchainkit/wallet';
+import Image from 'next/image';
+import { Transaction, TransactionButton } from '@coinbase/onchainkit/transaction';
+import { useAccount, useReadContracts } from 'wagmi';
+import { useMiniKit, useAddFrame, useOpenUrl } from '@coinbase/onchainkit/minikit';
+import { Name, Identity, Address, Avatar, EthBalance } from '@coinbase/onchainkit/identity';
+import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Button, Icon, Home, Features } from './components/DemoComponents';
 import editionAbi from './contracts/MintbayEdition.json';
-import client from './lib/apollo';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
@@ -57,29 +39,64 @@ const TOKEN_QUERY = gql`
   }
 `;
 
-function AppContent() {
+const DEFAULT_CONTRACT_ADDRESS = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
+
+type Props = {
+  edition: any;
+  contractAddress: string;
+  imageUrl: string;
+  error?: string;
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const contractAddress = context.query.contract?.toString()?.toLowerCase() || DEFAULT_CONTRACT_ADDRESS;
+  let edition = null;
+  let imageUrl = 'https://mintbay-collect.vercel.app/placeholder-nft.png';
+  let error = null;
+
+  if (ethers.isAddress(contractAddress)) {
+    try {
+      const { data } = await client.query({
+        query: TOKEN_QUERY,
+        variables: { id: contractAddress },
+      });
+      edition = data.edition;
+      if (edition?.tokens?.[0]?.tokenURI?.startsWith('data:application/json;base64,')) {
+        const metadata = JSON.parse(atob(edition.tokens[0].tokenURI.split(',')[1]));
+        if (metadata.image) {
+          imageUrl = metadata.image;
+        }
+      }
+    } catch (err) {
+      console.error('Server-side GraphQL Error:', err);
+      error = 'Failed to load NFT data';
+    }
+  } else {
+    error = 'Invalid contract address';
+  }
+
+  return {
+    props: {
+      edition,
+      contractAddress,
+      imageUrl,
+      error,
+    },
+  };
+};
+
+function AppContent({ edition, contractAddress, imageUrl: initialImageUrl, error: initialError }: Props) {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const openUrl = useOpenUrl();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const contractAddress = searchParams.get('contract')?.toLowerCase();
   const { address: walletAddress } = useAccount();
-  const [imageUrl, setImageUrl] = useState('https://mintbay-collect.vercel.app/placeholder-nft.png');
-
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const addFrame = useAddFrame();
 
   const isValidAddress = contractAddress && ethers.isAddress(contractAddress);
-
-  const { data, loading, error: graphError } = useQuery(TOKEN_QUERY, {
-    variables: { id: contractAddress },
-    skip: !isValidAddress,
-    client,
-  });
-
-  const edition = data?.edition;
 
   const contractConfig = {
     address: contractAddress as `0x${string}`,
@@ -109,22 +126,6 @@ function AppContent() {
       }
     }
   }, [setFrameReady, isFrameReady]);
-
-  useEffect(() => {
-    if (edition?.tokens?.[0]?.tokenURI) {
-      const tokenURI = edition.tokens[0].tokenURI;
-      if (tokenURI.startsWith('data:application/json;base64,')) {
-        try {
-          const metadata = JSON.parse(atob(tokenURI.split(',')[1]));
-          if (metadata.image) {
-            setImageUrl(metadata.image);
-          }
-        } catch (err) {
-          console.error('Failed to parse tokenURI:', err);
-        }
-      }
-    }
-  }, [edition]);
 
   const handleAddFrame = async () => {
     try {
@@ -174,13 +175,12 @@ function AppContent() {
     },
   ] : [];
 
-  if (isValidAddress && (loading || contractLoading)) {
-    return <div className="text-center p-4 mini-app-theme">Loading...</div>;
+  if (error) {
+    return <div className="text-center p-4 mini-app-theme">Error: {error}</div>;
   }
 
-  if (isValidAddress && graphError) {
-    console.error('GraphQL error:', graphError);
-    return <div className="text-center p-4 mini-app-theme">Error: {graphError.message}</div>;
+  if (isValidAddress && contractLoading) {
+    return <div className="text-center p-4 mini-app-theme">Loading...</div>;
   }
 
   if (isValidAddress && !edition) {
@@ -283,10 +283,6 @@ function AppContent() {
   );
 }
 
-export default function Page() {
-  return (
-    <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
-      <AppContent />
-    </Suspense>
-  );
+export default function Page(props: Props) {
+  return <AppContent {...props} />;
 }

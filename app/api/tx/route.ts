@@ -1,4 +1,3 @@
-// File: app/api/tx/route.ts
 import { NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 import { gql } from '@apollo/client';
@@ -14,8 +13,11 @@ const TOKEN_QUERY = gql`
   }
 `;
 
-export async function POST() {
-  const contractAddress = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
+const DEFAULT_CONTRACT_ADDRESS = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => ({}));
+  const contractAddress = (body.contract || DEFAULT_CONTRACT_ADDRESS).toLowerCase();
 
   if (!ethers.isAddress(contractAddress)) {
     return new NextResponse('Invalid contract address', { status: 400 });
@@ -23,7 +25,10 @@ export async function POST() {
 
   const queryResult = await client.query({
     query: TOKEN_QUERY,
-    variables: { id: contractAddress.toLowerCase() },
+    variables: { id: contractAddress },
+  }).catch(err => {
+    console.error('GraphQL Error:', err);
+    return { data: null };
   });
 
   const quantity = 1;
@@ -40,10 +45,13 @@ export async function POST() {
     'Content-Type': 'application/json',
   };
 
+  // Remove Farcaster headers unless explicitly required by MiniKit/Warpcast
+  /*
   if (process.env.FARCASTER_HEADER && process.env.FARCASTER_PAYLOAD && process.env.FARCASTER_SIGNATURE) {
     headers[process.env.FARCASTER_HEADER] = process.env.FARCASTER_PAYLOAD;
     headers['X-Farcaster-Signature'] = process.env.FARCASTER_SIGNATURE;
   }
+  */
 
   return new NextResponse(
     JSON.stringify({
