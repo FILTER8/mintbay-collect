@@ -7,9 +7,9 @@ import editionAbi from '../contracts/MintbayEdition.json';
 interface NFTImageProps {
   address: string;
   tokenId: number;
-  scale: 1 | 2 | 3 | 4;
+  scale: 1 | 2 | 3;
   imageSrc?: string;
-  tokenURI?: string | null; // GraphQL tokenURI
+  tokenURI?: string | null;
   onImageLoad?: () => void;
 }
 
@@ -38,20 +38,23 @@ export const processTokenURI = async (uri: string): Promise<string | null> => {
   }
 };
 
-const useNFTURI = (address: string, tokenId: number, skip: boolean = false) => {
+const useNFTURI = (address: string, tokenId: number, skip: boolean) => {
+  const shouldSkip = skip || !address || tokenId < 0;
   const { data, error } = useReadContract({
     address: address as `0x${string}`,
     abi: editionAbi.abi,
     functionName: 'tokenURI',
     args: [tokenId],
-    enabled: !skip,
+    query: {
+      enabled: !shouldSkip,
+    },
     cacheTime: 600_000, // Cache contract calls for 10 minutes
   });
 
   return useMemo(() => {
-    if (!data || error) return null;
+    if (shouldSkip || !data || error) return null;
     return typeof data === 'string' ? data : null;
-  }, [data, error]);
+  }, [data, error, shouldSkip]);
 };
 
 function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: NFTImageProps) {
@@ -63,9 +66,9 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
   useEffect(() => {
     const cacheKey = `${address}:${tokenId}:image`;
     if (!imageSrc) {
-      localforage.getItem(cacheKey).then((cached) => {
+      localforage.getItem<string | null>(cacheKey).then((cached) => {
         if (cached) {
-          setFetchedImageSrc(cached as string);
+          setFetchedImageSrc(cached);
           setStatus('success');
         }
       });
@@ -87,7 +90,7 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
       if (image) {
         setFetchedImageSrc(image);
         setStatus('success');
-        await localforage.setItem(`${address}:${tokenId}:image`, image);
+        await localforage.setItem(cacheKey, image);
       } else {
         setStatus('error');
       }
@@ -122,7 +125,7 @@ function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: 
 
   return (
     <Image
-      src="/default-nft.png"
+      src={process.env.NEXT_PUBLIC_SPLASH_IMAGE_URL || '/default-nft.png'}
       alt="Default NFT"
       width={size}
       height={size}
