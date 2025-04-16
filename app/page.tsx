@@ -41,7 +41,9 @@ interface WhitelistContract {
     editionSize: string;
     totalSupply: string;
     tokens?: Array<{
-      tokenURI?: string | null;
+      id: string;
+      tokenId: string;
+      tokenURI: string | null;
     }>;
   };
 }
@@ -66,6 +68,8 @@ const TOKEN_QUERY = gql`
           editionSize
           totalSupply
           tokens(where: { tokenId: 1 }, first: 1) {
+            id
+            tokenId
             tokenURI
           }
         }
@@ -154,7 +158,7 @@ export default function App() {
   const whitelistContractInfo = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract, index: number) => ({
       address: wc.whitelistedEdition.address,
-      name: wc.whitelistedEdition.name,
+      name: wc.whitelistedEdition.name || wc.whitelistedEdition.address.slice(0, 6),
       priceEth: wc.whitelistedEdition.priceEth || "0",
       isFreeMint: wc.whitelistedEdition.isFreeMint || false,
       totalSupply: whitelistTotalSupplyData[index]?.result
