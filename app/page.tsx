@@ -113,7 +113,6 @@ export default function App() {
   const launchpadFee = "0.0004";
   const whitelistContracts = useMemo<WhitelistContract[]>(() => edition?.whitelistedContracts || [], [edition]);
 
-  const contractConfig = { address: CONTRACT_ADDRESS as `0x${string}`, abi: editionAbi.abi as Abi };
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
@@ -224,7 +223,7 @@ export default function App() {
 
   useEffect(() => {
     if (writeError) {
-      setErrorMessage(`Transactionarm failed: ${writeError.message}`);
+      setErrorMessage(`Transaction failed: ${writeError.message}`);
       const timer = setTimeout(() => setErrorMessage(null), 5000);
       return () => clearTimeout(timer);
     }
