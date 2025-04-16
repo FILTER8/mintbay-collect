@@ -119,23 +119,23 @@ export default function App() {
       { ...contract, functionName: "isFreeMint" },
     ]),
     watch: true,
-    cacheTime: 30000,
-    staleTime: 30000,
+    cacheTime: 30_000,
+    staleTime: 30_000,
   });
 
   const supplyMap = useMemo(() => {
     const map = new Map<string, { totalSupply: number; nextTokenId: number; price: string; isFreeMint: boolean }>();
     if (contractData) {
       for (let i = 0; i < normalizedEditions.length; i++) {
-        const totalSupply = contractData[i * 4]?.result;
-        const nextTokenId = contractData[i * 4 + 1]?.result;
-        const price = contractData[i * 4 + 2]?.result;
-        const isFreeMint = contractData[i * 4 + 3]?.result;
+        const totalSupply = contractData[i * 4]?.result as number | undefined;
+        const nextTokenId = contractData[i * 4 + 1]?.result as number | undefined;
+        const price = contractData[i * 4 + 2]?.result as string | undefined;
+        const isFreeMint = contractData[i * 4 + 3]?.result as boolean | undefined;
         if (totalSupply !== undefined && nextTokenId !== undefined && price !== undefined && isFreeMint !== undefined) {
           map.set(normalizedEditions[i], {
-            totalSupply: Number(totalSupply),
-            nextTokenId: Number(nextTokenId),
-            price: price.toString(),
+            totalSupply,
+            nextTokenId,
+            price,
             isFreeMint,
           });
         }
@@ -162,13 +162,13 @@ export default function App() {
           price: edition.price || supplyData.price || "0",
           isFreeMint: edition.isFreeMint ?? supplyData.isFreeMint ?? false,
           LAUNCHPAD_FEE: edition.LAUNCHPAD_FEE || "0",
-          nextTokenId: supplyData.nextTokenId || edition.nextTokenId || "0",
-          totalSupply: supplyData.totalSupply || Number(edition.totalSupply) || 0,
-          createdAt: Number(edition.createdAt) || 0,
+          nextTokenId: supplyData.nextTokenId.toString() || edition.nextTokenId || "0",
+          totalSupply: supplyData.totalSupply.toString() || edition.totalSupply || "0",
+          createdAt: edition.createdAt || "0",
           tokens: Array.isArray(edition.tokens)
             ? edition.tokens.map((token) => ({
                 ...token,
-                tokenId: Number(token.tokenId) || 0,
+                tokenId: token.tokenId || "0",
                 tokenURI: token.tokenURI || null,
               }))
             : [],
@@ -209,6 +209,7 @@ export default function App() {
       mainElement.addEventListener("scroll", handleScroll);
       return () => mainElement.removeEventListener("scroll", handleScroll);
     }
+    return () => {};
   }, [handleScroll]);
 
   useEffect(() => {
