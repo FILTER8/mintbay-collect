@@ -130,18 +130,18 @@ export default function App() {
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: editionAbi.abi as Abi,
         functionName: "maxMintPerAddress",
-      },
+      } as const,
       {
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: editionAbi.abi as Abi,
         functionName: "mintCount",
         args: walletAddress ? [walletAddress] : undefined,
-      },
+      } as const,
       ...whitelistContractConfigs.map((config) => ({
         address: config.address,
         abi: config.abi,
         functionName: "totalSupply",
-      })),
+      } as const)),
     ],
     query: { enabled: !!walletAddress && whitelistContracts.length > 0, staleTime: 300_000 },
   });
