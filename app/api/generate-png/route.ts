@@ -68,8 +68,6 @@ export async function GET() {
     const ctx = canvas.getContext('2d');
 
 
-    ctx.imageSmoothingQuality = 'high';
-
     console.log('Loading SVG image');
     const img = await loadImage(svgContentModified);
     ctx.drawImage(img, 0, 0, 1200, 1200);
