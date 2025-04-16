@@ -18,7 +18,7 @@ interface Edition {
 interface TokenCardProps {
   edition: Edition;
   address: string;
-  scale: 1 | 2 | 3 | 4;
+  scale: 1 | 2 | 3;
   imageSrc?: string;
   tokenURI?: string | null;
 }
