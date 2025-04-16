@@ -59,6 +59,8 @@ const TOKEN_QUERY = gql`
   }
 `;
 
+const CONTRACT_ADDRESS = "0x7f19732c1ad9c25e604e3649638c1486f53e5c35";
+
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
@@ -72,33 +74,8 @@ export default function App() {
   const { writeContract, error: writeError } = useWriteContract();
   const router = useRouter();
 
-  // Log context for debugging
-  useEffect(() => {
-    console.log("MiniKit context:", context);
-  }, [context]);
-
-  // Extract token address from shared URL
-  const tokenAddress = useMemo(() => {
-    // Use context.input?.url instead of context.message
-    const sharedUrl = (context as any)?.input?.url;
-    if (sharedUrl) {
-      try {
-        const url = new URL(sharedUrl);
-        const pathSegments = url.pathname.split("/");
-        const address = pathSegments[pathSegments.length - 1];
-        if (ethers.isAddress(address)) {
-          return address.toLowerCase();
-        }
-      } catch (err) {
-        console.error("Failed to parse URL:", err);
-      }
-    }
-    // Fallback address for local testing
-    return "0x7f19732c1ad9c25e604e3649638c1486f53e5c35";
-  }, [context]);
-
   const { data, loading, error } = useQuery(TOKEN_QUERY, {
-    variables: { id: tokenAddress },
+    variables: { id: CONTRACT_ADDRESS.toLowerCase() },
     client,
   });
 
@@ -118,7 +95,7 @@ export default function App() {
   const launchpadFee = "0.0004";
   const whitelistContracts = useMemo(() => edition?.whitelistedContracts || [], [edition]);
 
-  const contractConfig = { address: tokenAddress as `0x${string}`, abi: editionAbi.abi };
+  const contractConfig = { address: CONTRACT_ADDRESS as `0x${string}`, abi: editionAbi.abi };
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
@@ -247,7 +224,7 @@ export default function App() {
     }
 
     try {
-      const contract = new ethers.Contract(tokenAddress, editionAbi.abi, provider);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, editionAbi.abi, provider);
 
       const isPaused = await contract.paused();
       if (isPaused) {
@@ -276,7 +253,7 @@ export default function App() {
 
       writeContract(
         {
-          address: tokenAddress as `0x${string}`,
+          address: CONTRACT_ADDRESS as `0x${string}`,
           abi: editionAbi.abi,
           functionName: "collectBatch",
           args: [BigInt(1)],
@@ -303,7 +280,7 @@ export default function App() {
       setErrorMessage("Failed to validate mint conditions. Please try again.");
       console.error("Collect Validation Error:", error);
     }
-  }, [isConnected, priceEth, isFreeMint, provider, writeContract, walletAddress, remainingTokens, tokenAddress]);
+  }, [isConnected, priceEth, isFreeMint, provider, writeContract, walletAddress, remainingTokens]);
 
   const handleCollectWhitelistToken = useCallback(
     async (contractAddress: string, priceEth: string, isFreeMint: boolean) => {
@@ -377,7 +354,7 @@ export default function App() {
     }
   };
 
-  const saveFrameButton = context && !(context as any).client?.added ? (
+  const saveFrameButton = context && !context.client.added ? (
     <Button
       variant="ghost"
       size="sm"
