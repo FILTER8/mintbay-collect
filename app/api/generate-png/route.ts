@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { gql } from '@apollo/client';
 import client from '../../lib/apollo';
+import { createCanvas, loadImage } from 'canvas';
 
 const TOKEN_QUERY = gql`
   query TokenPageQuery($id: ID!) {
@@ -14,33 +15,56 @@ const TOKEN_QUERY = gql`
 
 const CONTRACT_ADDRESS = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
 
-// This is a placeholder for client-side PNG generation, as server-side canvas isn't directly supported
 export async function GET() {
   try {
-    // Fetch tokenURI server-side
+    console.log('Fetching tokenURI for contract:', CONTRACT_ADDRESS);
     const { data } = await client.query({
       query: TOKEN_QUERY,
       variables: { id: CONTRACT_ADDRESS.toLowerCase() },
     });
+    console.log('GraphQL response:', data);
 
     const tokenURI = data?.edition?.tokens?.[0]?.tokenURI;
     if (!tokenURI || !tokenURI.startsWith('data:application/json;base64,')) {
+      console.error('Invalid tokenURI:', tokenURI);
       return NextResponse.json({ error: 'Invalid tokenURI' }, { status: 400 });
     }
 
     const base64Data = tokenURI.split(',')[1];
     const metadataStr = atob(base64Data);
     const metadata = JSON.parse(metadataStr);
+    console.log('Metadata:', metadata);
 
     if (!metadata.image || !metadata.image.startsWith('data:image/svg+xml;base64,')) {
+      console.error('No SVG image found:', metadata.image);
       return NextResponse.json({ error: 'No SVG image found' }, { status: 400 });
     }
 
-    // Return the SVG data URI for client-side processing
-    // In a real app, you'd use a CDN or storage service to host the PNG
-    return NextResponse.json({ svgDataUri: metadata.image });
+    const svgBase64 = metadata.image.split(',')[1];
+    const svgContent = Buffer.from(svgBase64, 'base64');
+    console.log('SVG Buffer Size:', svgContent.length);
+
+    const canvas = createCanvas(600, 600);
+    const ctx = canvas.getContext('2d');
+
+    console.log('Loading SVG image');
+    const img = await loadImage(svgContent);
+    ctx.drawImage(img, 0, 0, 600, 600);
+
+    const buffer = canvas.toBuffer('image/png');
+    console.log('PNG Buffer Size:', buffer.length);
+
+    return new NextResponse(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Content-Disposition': 'inline; filename="token.png"',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   } catch (err) {
     console.error('Error generating PNG:', err);
-    return NextResponse.json({ error: 'Failed to generate PNG' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate PNG', details: err.message }, { status: 500 });
   }
 }
