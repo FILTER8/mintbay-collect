@@ -22,7 +22,7 @@ import {
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
 import { useWriteContract, useAccount, useReadContracts } from "wagmi";
-import { Abi } from "viem"; // Import Abi type from viem (used by wagmi)
+import { Abi } from "viem";
 import { ethers } from "ethers";
 import Image from "next/image";
 import client from "./lib/apollo";
@@ -113,7 +113,6 @@ export default function App() {
   const launchpadFee = "0.0004";
   const whitelistContracts = useMemo<WhitelistContract[]>(() => edition?.whitelistedContracts || [], [edition]);
 
-  // Cast editionAbi.abi to Abi to satisfy wagmi's type requirements
   const contractConfig = { address: CONTRACT_ADDRESS as `0x${string}`, abi: editionAbi.abi as Abi };
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract) => ({
@@ -124,10 +123,20 @@ export default function App() {
 
   const { data: contractData, isLoading: contractLoading } = useReadContracts({
     contracts: [
-      { ...contractConfig, functionName: "maxMintPerAddress" },
-      { ...contractConfig, functionName: "mintCount", args: [walletAddress] },
+      {
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: editionAbi.abi as Abi,
+        functionName: "maxMintPerAddress",
+      },
+      {
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: editionAbi.abi as Abi,
+        functionName: "mintCount",
+        args: walletAddress ? [walletAddress] : undefined,
+      },
       ...whitelistContractConfigs.map((config) => ({
-        ...config,
+        address: config.address,
+        abi: config.abi,
         functionName: "totalSupply",
       })),
     ],
@@ -215,7 +224,7 @@ export default function App() {
 
   useEffect(() => {
     if (writeError) {
-      setErrorMessage(`Transaction failed: ${writeError.message}`);
+      setErrorMessage(`Transactionarm failed: ${writeError.message}`);
       const timer = setTimeout(() => setErrorMessage(null), 5000);
       return () => clearTimeout(timer);
     }
