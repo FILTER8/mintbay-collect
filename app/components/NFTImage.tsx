@@ -1,0 +1,150 @@
+import { useEffect, useState, useMemo, memo } from 'react';
+import { useReadContract } from 'wagmi';
+import localforage from 'localforage';
+import Image from 'next/image';
+import editionAbi from '../contracts/MintbayEdition.json';
+
+interface NFTImageProps {
+  address: string;
+  tokenId: number;
+  scale: 1 | 2 | 3 | 4;
+  imageSrc?: string;
+  tokenURI?: string | null; // GraphQL tokenURI
+  onImageLoad?: () => void;
+}
+
+localforage.config({ name: 'NFTImageCache' });
+
+export const processTokenURI = async (uri: string): Promise<string | null> => {
+  try {
+    if (!uri.startsWith('data:application/json;base64,')) {
+      console.error('Invalid tokenURI format:', uri);
+      return null;
+    }
+
+    const base64Data = uri.split(',')[1];
+    const metadata = JSON.parse(atob(base64Data));
+    const imageSrc = metadata.image;
+
+    if (!imageSrc || !imageSrc.startsWith('data:image/svg+xml;base64,')) {
+      console.error('Invalid image format:', imageSrc);
+      return null;
+    }
+
+    return imageSrc;
+  } catch (err) {
+    console.error('Failed to process URI:', uri, err);
+    return null;
+  }
+};
+
+const useNFTURI = (address: string, tokenId: number, skip: boolean = false) => {
+  const { data, error } = useReadContract({
+    address: address as `0x${string}`,
+    abi: editionAbi.abi,
+    functionName: 'tokenURI',
+    args: [tokenId],
+    enabled: !skip,
+    cacheTime: 600_000, // Cache contract calls for 10 minutes
+  });
+
+  return useMemo(() => {
+    if (!data || error) return null;
+    return typeof data === 'string' ? data : null;
+  }, [data, error]);
+};
+
+function NFTImage({ address, tokenId, scale, imageSrc, tokenURI, onImageLoad }: NFTImageProps) {
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(imageSrc ? 'success' : 'loading');
+  const [fetchedImageSrc, setFetchedImageSrc] = useState<string | null>(imageSrc || null);
+  const size = 72 * scale;
+
+  // Check cache for image
+  useEffect(() => {
+    const cacheKey = `${address}:${tokenId}:image`;
+    if (!imageSrc) {
+      localforage.getItem(cacheKey).then((cached) => {
+        if (cached) {
+          setFetchedImageSrc(cached as string);
+          setStatus('success');
+        }
+      });
+    }
+  }, [address, tokenId, imageSrc]);
+
+  // Fetch tokenURI from contract only if needed
+  const contractURI = useNFTURI(address, tokenId, !!imageSrc || !!tokenURI);
+  const primaryURI = tokenURI || contractURI;
+
+  useEffect(() => {
+    if (imageSrc || !primaryURI) {
+      if (!imageSrc) setStatus('error');
+      return;
+    }
+
+    const loadImage = async () => {
+      const image = await processTokenURI(primaryURI);
+      if (image) {
+        setFetchedImageSrc(image);
+        setStatus('success');
+        await localforage.setItem(`${address}:${tokenId}:image`, image);
+      } else {
+        setStatus('error');
+      }
+    };
+
+    loadImage();
+  }, [primaryURI, imageSrc, address, tokenId]);
+
+  if (status === 'loading') {
+    return <Placeholder size={size} text="Loading..." />;
+  }
+
+  if (fetchedImageSrc) {
+    return (
+      <div style={{ width: size, height: size }}>
+        <Image
+          src={fetchedImageSrc}
+          alt={`NFT ${tokenId}`}
+          width={size}
+          height={size}
+          loading="lazy"
+          sizes={`(max-width: 768px) ${size}px, ${size * 2}px`}
+          onLoad={onImageLoad}
+          style={{
+            objectFit: 'contain',
+            imageRendering: 'pixelated',
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src="/default-nft.png"
+      alt="Default NFT"
+      width={size}
+      height={size}
+      style={{ objectFit: 'contain' }}
+    />
+  );
+}
+
+const Placeholder = ({ size, text }: { size: number; text: string }) => (
+  <div
+    className="bg-gray-100 flex items-center justify-center"
+    style={{ width: size, height: size }}
+  >
+    <span className="text-gray-400 text-xs">{text}</span>
+  </div>
+);
+
+export default memo(NFTImage, (prevProps, nextProps) =>
+  prevProps.address === nextProps.address &&
+  prevProps.tokenId === nextProps.tokenId &&
+  prevProps.scale === nextProps.scale &&
+  prevProps.imageSrc === nextProps.imageSrc &&
+  prevProps.tokenURI === nextProps.tokenURI &&
+  prevProps.onImageLoad === nextProps.onImageLoad
+);
