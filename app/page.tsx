@@ -1,4 +1,4 @@
-
+```typescript
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -117,6 +117,11 @@ export default function App() {
   const launchpadFee = "0.0004";
   const whitelistContracts = useMemo<WhitelistContract[]>(() => edition?.whitelistedContracts || [], [edition]);
 
+  const contractConfig = {
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: editionAbi.abi as Abi,
+  };
+
   const whitelistContractConfigs = useMemo(() => {
     return whitelistContracts.map((wc: WhitelistContract) => ({
       address: wc.whitelistedEdition.address as `0x${string}`,
@@ -126,22 +131,16 @@ export default function App() {
 
   const { data: contractData, isLoading: contractLoading } = useReadContracts({
     contracts: [
+      { ...contractConfig, functionName: "maxMintPerAddress" },
       {
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi: editionAbi.abi as Abi,
-        functionName: "maxMintPerAddress",
-      } as const,
-      {
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi: editionAbi.abi as Abi,
+        ...contractConfig,
         functionName: "mintCount",
         args: walletAddress ? [walletAddress] : undefined,
-      } as const,
+      },
       ...whitelistContractConfigs.map((config) => ({
-        address: config.address,
-        abi: config.abi,
+        ...config,
         functionName: "totalSupply",
-      } as const)),
+      })),
     ],
     query: { enabled: !!walletAddress && whitelistContracts.length > 0, staleTime: 300_000 },
   });
@@ -619,3 +618,4 @@ export default function App() {
     </div>
   );
 }
+```
