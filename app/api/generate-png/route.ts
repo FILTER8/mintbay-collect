@@ -43,15 +43,20 @@ export async function GET() {
     const svgBase64 = metadata.image.split(',')[1];
     const svgContent = Buffer.from(svgBase64, 'base64');
     console.log('SVG Buffer Size:', svgContent.length);
+    console.log('SVG Content Sample:', svgContent.toString('utf8').slice(0, 200));
 
-    const canvas = createCanvas(1200, 1200); // Increased for sharper image
+    const canvas = createCanvas(1200, 1200);
     const ctx = canvas.getContext('2d');
+
+    // Optimize SVG rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     console.log('Loading SVG image');
     const img = await loadImage(svgContent);
-    ctx.drawImage(img, 0, 0, 1200, 1200); // Scale to 1200x1200
+    ctx.drawImage(img, 0, 0, 1200, 1200);
 
-    const buffer = canvas.toBuffer('image/png', { compressionLevel: 3 }); // Lower compression for quality
+    const buffer = canvas.toBuffer('image/png', { compressionLevel: 0 }); // No compression
     console.log('PNG Buffer Size:', buffer.length);
 
     return new NextResponse(buffer, {

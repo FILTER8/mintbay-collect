@@ -23,7 +23,7 @@ const CONTRACT_ADDRESS = '0x7f19732c1ad9c25e604e3649638c1486f53e5c35';
 
 export async function generateMetadata(): Promise<Metadata> {
   const URL = process.env.NEXT_PUBLIC_URL || 'https://mintbay-collect.vercel.app';
-  const IMAGE_URL = `${URL}/api/generate-png`; // PNG from API route
+  const IMAGE_URL = `${URL}/api/generate-png`;
   let title = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp';
 
   try {
@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame": JSON.stringify({
         version: process.env.NEXT_PUBLIC_VERSION || 'next',
         imageUrl: IMAGE_URL,
-        imageAspectRatio: '1:1', // Explicitly set to square
+        imageAspectRatio: '1:1',
         button: {
           title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'CollectApp'}`,
           action: {
@@ -58,6 +58,8 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       }),
       "og:image": IMAGE_URL,
+      "og:image:width": "1200",
+      "og:image:height": "1200",
     },
   };
 }
